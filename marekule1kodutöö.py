@@ -1,4 +1,5 @@
 #Tegin koostöös Margus Reintamiga
+#Kõik töötab, v.a. simuleeritud kiiruse lõpp, kus koodi järgi peaks kiirendus minema miinustesse ehk sõiduk peaks hakkama tagurdama, mistõttu tekib ka erinevus originaalse ning simuleeritud kiiruse vahel
 
 import pandas as pd
 import numpy as np
