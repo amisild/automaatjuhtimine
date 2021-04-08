@@ -1,6 +1,7 @@
 #Kiirendus peab toimuma sujuvalt - kiirenduse muutuse suurus ei tohi olla suurem, kui 1[m/s^3]
 #Viimasesse tsooni (x >= 500) jõudes peab jääma sõiduk koheselt seisma
 
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize
@@ -31,10 +32,14 @@ class ModelPredictiveControl:
 
         current_location, speed = input
 
+        prev_speed = 0.0
+        prev_kiirendus = 0.0
+
         for i in range(0, self.horizon):
             speed = self.plant_model(u[i], speed)
 
             current_location += speed / dT
+
             if current_location < 200:
                 ideal_speed = 25 / 3.6
             elif 200 <= current_location < 300:
@@ -44,8 +49,18 @@ class ModelPredictiveControl:
             elif current_location >= 500:
                 ideal_speed = 0
 
-
             cost += abs(speed - ideal_speed)
+
+            #kiirenduse muutuse arvutamine
+            kiirendus = speed - prev_speed
+            kiirenduse_muutus = kiirendus - prev_kiirendus
+
+            if (kiirenduse_muutus > 1 or kiirenduse_muutus < -1):
+                cost += 100
+
+            prev_kiirendus = kiirendus
+            prev_speed = speed
+
         return cost
 
 
@@ -67,7 +82,12 @@ speed_list = []
 t_list = []
 location_list = []
 speed = 0.0
+prev_speed = 0.0
+kiirendus = 0.0
+prev_kiirendus = 0.0
+kiirenduse_muutus = 0.0
 current_location = 0.0
+kiiruse_piirang = []
 
 for i in range(sim_time * dT):
     # Non-linear optimization.
@@ -90,15 +110,27 @@ for i in range(sim_time * dT):
     speed = mpc.plant_model(u[0], speed)
     t_list += [i]
     u_list += [u[0]]
+
+
     speed_list += [speed * 3.6]
     location_list += [current_location]
     np.delete(u, 0)
     np.append(u, 0)
 
+#csv
+for current_location in location_list:
+    if (current_location < 200):
+        kiiruse_piirang.append(25)
+    elif 200 <= current_location < 300:
+        kiiruse_piirang.append(10)
+    elif 300 <= current_location < 500:
+        kiiruse_piirang.append(30)
+    elif current_location >= 500:
+        kiiruse_piirang.append(0)
 
+#kirjutan andmed CSVsse
+andmed = pd.DataFrame({'aeg [s]': t_list, ' asukoht [m]': location_list, ' kiirus [km/h]': speed_list, ' kiirusepiirang [km/h]': kiiruse_piirang}).to_csv("3_hw_andmed.csv", sep = "\t", index = False)
 
-
-    print(current_location)
 
 
 
